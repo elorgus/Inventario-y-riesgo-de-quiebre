@@ -1,0 +1,66 @@
+services:
+  app:
+    build: .
+    container_name: inventario-app
+    env_file: .env
+    ports:
+      - "${APP_PORT}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - inventario-net
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: inventario-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - inventario-net
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: inventario-rabbit
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    ports:
+      - "${RABBITMQ_PORT}:5672"
+      - "${RABBITMQ_MGMT_PORT}:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    networks:
+      - inventario-net
+
+  # Descomentar SOLO si se demuestra necesidad de caché
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: inventario-redis
+  #   ports:
+  #     - "${REDIS_PORT}:6379"
+  #   networks:
+  #     - inventario-net
+
+volumes:
+  postgres_data:
+
+networks:
+  inventario-net:
+    driver: bridge
