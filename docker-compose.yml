@@ -49,15 +49,6 @@ services:
     networks:
       - inventario-net
 
-  # Descomentar SOLO si se demuestra necesidad de caché
-  # redis:
-  #   image: redis:7-alpine
-  #   container_name: inventario-redis
-  #   ports:
-  #     - "${REDIS_PORT}:6379"
-  #   networks:
-  #     - inventario-net
-
 volumes:
   postgres_data:
 
