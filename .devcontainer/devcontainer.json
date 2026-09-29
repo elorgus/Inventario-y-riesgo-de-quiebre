@@ -5,7 +5,20 @@
   "workspaceFolder": "/app",
   "shutdownAction": "stopCompose",
   "features": {
-    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "version": "latest",
+      "enableNonRootDocker": "true",
+      "moby": "true"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "vscjava.vscode-java-pack",
+        "vmware.vscode-boot-dev-pack",
+        "ms-azuretools.vscode-docker"
+      ]
+    }
   },
   "forwardPorts": [8080, 5432, 5672, 15672],
   "remoteUser": "root"
