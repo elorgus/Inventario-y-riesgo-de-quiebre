@@ -4,18 +4,8 @@
   "service": "app",
   "workspaceFolder": "/app",
   "shutdownAction": "stopCompose",
-  "customizations": {
-    "vscode": {
-      "extensions": [
-        "vscjava.vscode-java-pack",
-        "vmware.vscode-boot-dev-pack",
-        "ms-azuretools.vscode-docker",
-        "cweijan.vscode-postgresql-client2"
-      ],
-      "settings": {
-        "java.configuration.updateBuildConfiguration": "automatic"
-      }
-    }
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
   },
   "forwardPorts": [8080, 5432, 5672, 15672],
   "remoteUser": "root"
