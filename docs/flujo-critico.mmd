@@ -1,0 +1,16 @@
+sequenceDiagram
+    actor Enc as Encargado
+    participant Web as Frontend
+    participant App as App Spring Boot
+    participant DB as PostgreSQL
+    participant MQ as RabbitMQ
+
+    Enc->>Web: Abre dashboard
+    Web->>App: GET /api/v1/riesgo
+    App->>DB: SELECT productos + stock
+    DB-->>App: Filas
+    App->>App: Calcula días hasta quiebre<br/>(stock / consumo diario)
+    App->>App: Clasifica nivel<br/>(CRITICO/ALTO/MEDIO/OK)
+    App->>MQ: Publica stock.en.riesgo (por cada crítico)
+    App-->>Web: JSON con lista ordenada
+    Web-->>Enc: Muestra tabla con badges

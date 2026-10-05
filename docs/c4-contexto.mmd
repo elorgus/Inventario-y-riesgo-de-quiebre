@@ -1,0 +1,15 @@
+C4Context
+    title Contexto — Sistema de Inventario y Riesgo de Quiebre
+
+    Person(encargado, "Encargado de bodega", "Consulta stock y riesgo")
+    Person(supervisor, "Supervisor de compras", "Aprueba transferencias")
+
+    System(inventario, "Sistema de Inventario", "Detecta quiebres y recomienda acciones")
+
+    System_Ext(compras, "Sistema de Compras", "Recibe órdenes aprobadas")
+    System_Ext(fuente, "Sistema de Inventario (fuente)", "Alimenta stock real")
+
+    Rel(encargado, inventario, "Consulta stock y riesgo", "HTTPS")
+    Rel(supervisor, inventario, "Aprueba acciones", "HTTPS")
+    Rel(inventario, fuente, "Lee stock real", "REST")
+    Rel(inventario, compras, "Envía órdenes aprobadas", "REST/AMQP")

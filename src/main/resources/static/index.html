@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventario - Riesgo de Quiebre</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f5f7fa;
+            color: #2c3e50;
+            padding: 2rem;
+        }
+        header {
+            margin-bottom: 2rem;
+            border-bottom: 2px solid #e1e8ed;
+            padding-bottom: 1rem;
+        }
+        h1 { font-size: 1.8rem; color: #1a2a3a; }
+        h1 span { color: #3498db; }
+        .subtitle { color: #7f8c8d; font-size: 0.9rem; margin-top: 0.3rem; }
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .card {
+            background: white;
+            padding: 1.2rem;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        .card .label { font-size: 0.8rem; color: #7f8c8d; text-transform: uppercase; letter-spacing: 0.5px; }
+        .card .value { font-size: 2rem; font-weight: 700; margin-top: 0.3rem; }
+        .card.critico .value { color: #e74c3c; }
+        .card.alto .value { color: #e67e22; }
+        .card.medio .value { color: #f39c12; }
+        .card.ok .value { color: #27ae60; }
+        h2 { font-size: 1.2rem; margin: 1.5rem 0 0.8rem 0; color: #34495e; }
+        table {
+            width: 100%;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            border-collapse: collapse;
+        }
+        th {
+            background: #34495e;
+            color: white;
+            text-align: left;
+            padding: 0.8rem 1rem;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        td { padding: 0.8rem 1rem; border-bottom: 1px solid #ecf0f1; font-size: 0.9rem; }
+        tr:last-child td { border-bottom: none; }
+        tr:hover { background: #f8f9fa; }
+        .badge {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .badge.CRITICO { background: #fee; color: #c0392b; }
+        .badge.ALTO    { background: #fef0e6; color: #d35400; }
+        .badge.MEDIO   { background: #fef9e6; color: #b7950b; }
+        .badge.OK      { background: #e8f8ef; color: #229954; }
+        .error { color: #c0392b; padding: 1rem; background: #fee; border-radius: 8px; }
+        .refresh { margin-top: 1rem; padding: 0.6rem 1.2rem; background: #3498db; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
+        .refresh:hover { background: #2980b9; }
+        .timestamp { color: #95a5a6; font-size: 0.8rem; margin-top: 1rem; text-align: right; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Sistema de <span>Inventario</span></h1>
+        <p class="subtitle">Riesgo de quiebre por producto y bodega</p>
+    </header>
+
+    <div class="cards" id="cards">
+        <div class="card critico"><div class="label">Críticos</div><div class="value" id="count-critico">-</div></div>
+        <div class="card alto"><div class="label">Alto riesgo</div><div class="value" id="count-alto">-</div></div>
+        <div class="card medio"><div class="label">Medio</div><div class="value" id="count-medio">-</div></div>
+        <div class="card ok"><div class="label">OK</div><div class="value" id="count-ok">-</div></div>
+    </div>
+
+    <h2>Riesgo de quiebre</h2>
+    <table id="tabla-riesgo">
+        <thead>
+            <tr>
+                <th>SKU</th>
+                <th>Producto</th>
+                <th>Bodega</th>
+                <th>Stock actual</th>
+                <th>Stock mínimo</th>
+                <th>Días hasta quiebre</th>
+                <th>Nivel</th>
+            </tr>
+        </thead>
+        <tbody id="tbody-riesgo">
+            <tr><td colspan="7" style="text-align:center; color:#7f8c8d;">Cargando...</td></tr>
+        </tbody>
+    </table>
+
+    <h2>Productos</h2>
+    <table id="tabla-productos">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>SKU</th>
+                <th>Nombre</th>
+                <th>Unidad</th>
+                <th>Stock mínimo</th>
+                <th>Consumo diario</th>
+            </tr>
+        </thead>
+        <tbody id="tbody-productos"></tbody>
+    </table>
+
+    <h2>Bodegas</h2>
+    <table id="tabla-bodegas">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Ubicación</th>
+            </tr>
+        </thead>
+        <tbody id="tbody-bodegas"></tbody>
+    </table>
+
+    <button class="refresh" onclick="cargarTodo()">🔄 Actualizar</button>
+    <div class="timestamp" id="timestamp"></div>
+
+    <script>
+        async function fetchJson(url) {
+            const res = await fetch(url);
+            if (!res.ok) throw new Error(`HTTP ${res.status} en ${url}`);
+            return res.json();
+        }
+
+        async function cargarRiesgo() {
+            const data = await fetchJson('/api/v1/riesgo');
+            const tbody = document.getElementById('tbody-riesgo');
+            tbody.innerHTML = '';
+
+            const counts = { CRITICO: 0, ALTO: 0, MEDIO: 0, OK: 0 };
+            data.forEach(r => { if (counts[r.nivel] !== undefined) counts[r.nivel]++; });
+
+            document.getElementById('count-critico').textContent = counts.CRITICO;
+            document.getElementById('count-alto').textContent = counts.ALTO;
+            document.getElementById('count-medio').textContent = counts.MEDIO;
+            document.getElementById('count-ok').textContent = counts.OK;
+
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#7f8c8d;">Sin datos</td></tr>';
+                return;
+            }
+
+            data.forEach(r => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${r.sku}</strong></td>
+                    <td>${r.producto}</td>
+                    <td>${r.bodega}</td>
+                    <td>${r.stockActual}</td>
+                    <td>${r.stockMinimo}</td>
+                    <td>${r.diasHastaQuiebre !== null ? r.diasHastaQuiebre : '—'}</td>
+                    <td><span class="badge ${r.nivel}">${r.nivel}</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function cargarProductos() {
+            const data = await fetchJson('/api/v1/productos');
+            const tbody = document.getElementById('tbody-productos');
+            tbody.innerHTML = '';
+            data.forEach(p => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${p.id}</td>
+                    <td><strong>${p.sku}</strong></td>
+                    <td>${p.nombre}</td>
+                    <td>${p.unidad}</td>
+                    <td>${p.stockMinimo}</td>
+                    <td>${p.consumoDiarioPromedio}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function cargarBodegas() {
+            const data = await fetchJson('/api/v1/bodegas');
+            const tbody = document.getElementById('tbody-bodegas');
+            tbody.innerHTML = '';
+            data.forEach(b => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${b.id}</td>
+                    <td>${b.nombre}</td>
+                    <td>${b.ubicacion}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function cargarTodo() {
+            try {
+                await Promise.all([cargarRiesgo(), cargarProductos(), cargarBodegas()]);
+                document.getElementById('timestamp').textContent = 'Actualizado: ' + new Date().toLocaleString('es-EC');
+            } catch (e) {
+                document.getElementById('tbody-riesgo').innerHTML =
+                    `<tr><td colspan="7" class="error">Error: ${e.message}</td></tr>`;
+            }
+        }
+
+        cargarTodo();
+        setInterval(cargarTodo, 30000);
+    </script>
+</body>
+</html>

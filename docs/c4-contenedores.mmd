@@ -1,0 +1,18 @@
+C4Container
+    title Contenedores — Sistema de Inventario
+
+    Person(encargado, "Encargado")
+    Person(supervisor, "Supervisor")
+
+    Container_Boundary(c1, "Sistema de Inventario") {
+        Container(app, "App Spring Boot", "Java 21", "REST + lógica de riesgo")
+        ContainerDb(db, "PostgreSQL", "16", "Productos, bodegas, stock")
+        ContainerQueue(mq, "RabbitMQ", "3.13", "Eventos de riesgo")
+        Container(web, "Frontend", "HTML/JS", "Dashboard")
+    }
+
+    Rel(encargado, web, "Usa", "HTTPS")
+    Rel(supervisor, web, "Usa", "HTTPS")
+    Rel(web, app, "Consume API", "JSON/HTTPS")
+    Rel(app, db, "JPA", "JDBC")
+    Rel(app, mq, "Publica eventos", "AMQP")
